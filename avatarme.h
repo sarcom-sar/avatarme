@@ -14,7 +14,7 @@ static struct cag_option options[] = {
      .access_letters = "o",
      .access_name = "out",
      .value_name = "OUT",
-     .description = "Specifies output file, defaults to iden.bmp"}
+     .description = "Specifies output file, otherwise prints to stdout"}
 };
 
 struct config {
@@ -34,8 +34,10 @@ uint8_t get_md5_digest(uint8_t* input, uint8_t* digest);
 void identicon_info_init_colors(struct identicon_info* ii, uint8_t mdv[]);
 void identicon_info_build_picture(struct identicon_info* ii, uint8_t mdv[]);
 
-void identicon_info_print_stuff(struct identicon_info* ii);
+int identicon_info_to_buffer(struct identicon_info ii, char** buf);
 
-int identicon_info_write_to_file(struct identicon_info* ii, const char* filename);
+void identicon_info_print(char* buffer);
+
+int identicon_info_write_to_file(char* buffer, const char* filename);
 
 #endif

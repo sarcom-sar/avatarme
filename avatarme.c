@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
   char identifier;
   const char *value;
   cag_option_context context;
-  struct config conf = {"iden.ppm"};
+  struct config conf = {NULL};
   uint8_t param_index;
   uint8_t md_value[EVP_MAX_MD_SIZE];
   struct identicon_info iden_i;
@@ -44,11 +44,20 @@ int main(int argc, char *argv[]) {
 
   identicon_info_build_picture(&iden_i, md_value);
 
-  //identicon_info_print_stuff(&iden_i);
 
-  if (identicon_info_write_to_file(&iden_i, conf.out) < 0) {
+  char *buffer = malloc(1024);
+  if (identicon_info_to_buffer(iden_i, &buffer) < 0) {
+    printf("malloc failed\n");
+    return -1;
+  }
+
+  if (conf.out == NULL) {
+    identicon_info_print(buffer);
+  } else {
+    if (identicon_info_write_to_file(buffer, conf.out) < 0) {
       printf("failed to write to specified file\n");
       return -1;
+    }
   }
 
   return 0;
@@ -112,61 +121,104 @@ void identicon_info_build_picture(struct identicon_info* ii, uint8_t mdv[]) {
   }
 }
 
-void identicon_info_print_stuff(struct identicon_info* ii) {
-  printf("%s", ii->magic_number);
-  printf("%s", ii->size);
-  printf("%s", ii->available_colors);
+
+int identicon_info_to_buffer(struct identicon_info ii, char** buf) {
+  int buff_size = 1024;
+  int buff_num = 0;
+  char temp_buffer[13]; // guaranteed to be at best
+                        // "255 255 255 "
+  for (int i = 0; ii.magic_number[i] != '\0'; i++) {
+    (*buf)[buff_num] = ii.magic_number[i];
+    if (buff_num >= buff_size) {
+      *buf = realloc(*buf, buff_size *= 2);
+      if (!(*buf)) return -1;
+    }
+    buff_num++;
+  }
+  for (int i = 0; ii.size[i] != '\0'; i++) {
+    (*buf)[buff_num] = ii.size[i];
+    if (buff_num >= buff_size) {
+      *buf = realloc(*buf, buff_size *= 2);
+      if (!(*buf))
+        return -1;
+    }
+    buff_num++;
+  }
+  for (int i = 0; ii.available_colors[i] != '\0'; i++) {
+    (*buf)[buff_num] = ii.available_colors[i];
+    if (buff_num >= buff_size) {
+      *buf = realloc(*buf, buff_size *= 2);
+      if (!(*buf))
+        return -1;
+    }
+    buff_num++;
+  }
   for (int j = 0; j < 4; j++) {
     for (int i = 0; i < 12; i++) {
-      printf("%d ", ii->identicon[j][i]);
+      sprintf(temp_buffer, "%d ", ii.identicon[j][i]);
+      for (int x = 0; temp_buffer[x] != '\0'; x++) {
+        (*buf)[buff_num++] = temp_buffer[x];
+        if (buff_num >= buff_size) {
+          *buf = realloc(*buf, buff_size *= 2);
+          if (!(*buf))
+            return -1;
+        }
+      }
     }
-    for (int x = 4; x > 0; x--) {
-      int v = x * 3;
-      printf("%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2], ii->identicon[j][v-1]);
+    for (int i = 4; i > 0; i--) {
+      int v = i * 3;
+      sprintf(temp_buffer, "%d %d %d ", ii.identicon[j][v - 3],
+              ii.identicon[j][v - 2], ii.identicon[j][v - 1]);
+      for (int x = 0; temp_buffer[x] != '\0'; x++) {
+        (*buf)[buff_num++] = temp_buffer[x];
+        if (buff_num >= buff_size) {
+          *buf = realloc(*buf, buff_size *= 2);
+          if (!(*buf))
+            return -1;
+        }
+      }
     }
   }
-
   for (int j = 3; j >= 0; j--) {
     for (int i = 0; i < 12; i++) {
-      printf("%d ", ii->identicon[j][i]);
+      sprintf(temp_buffer, "%d ", ii.identicon[j][i]);
+      for (int x = 0; temp_buffer[x] != '\0'; x++) {
+        (*buf)[buff_num++] = temp_buffer[x];
+        if (buff_num >= buff_size) {
+          *buf = realloc(*buf, buff_size *= 2);
+          if (!(*buf))
+            return -1;
+        }
+      }
     }
-    for (int x = 4; x > 0; x--) {
-      int v = x * 3;
-      printf("%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2],
-    ii->identicon[j][v-1]);
+    for (int i = 4; i > 0; i--) {
+      int v = i * 3;
+      sprintf(temp_buffer, "%d %d %d ", ii.identicon[j][v - 3],
+              ii.identicon[j][v - 2], ii.identicon[j][v - 1]);
+      for (int x = 0; temp_buffer[x] != '\0'; x++) {
+        (*buf)[buff_num++] = temp_buffer[x];
+        if (buff_num >= buff_size) {
+          *buf = realloc(*buf, buff_size *= 2);
+          if (!(*buf))
+            return -1;
+        }
+      }
     }
   }
-  printf("\n");
+  (*buf)[buff_num] = '\0';
+  return 0;
 }
 
-int identicon_info_write_to_file(struct identicon_info *ii, const char *filename) {
-  FILE *fptr;
+void identicon_info_print(char *buffer) {
+  printf("%s\n", buffer);
+}
+
+int identicon_info_write_to_file(char* buffer, const char *filename) {
+  FILE* fptr;
   fptr = fopen(filename, "w");
   if (fptr == NULL) return -1;
 
-  fprintf(fptr, "%s", ii->magic_number);
-  fprintf(fptr, "%s", ii->size);
-  fprintf(fptr, "%s", ii->available_colors);
-  for (int j = 0; j < 4; j++) {
-    for (int i = 0; i < 12; i++) {
-      fprintf(fptr, "%d ", ii->identicon[j][i]);
-    }
-    for (int x = 4; x > 0; x--) {
-      int v = x * 3;
-      fprintf(fptr, "%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2], ii->identicon[j][v-1]);
-    }
-  }
-
-  for (int j = 3; j >= 0; j--) {
-    for (int i = 0; i < 12; i++) {
-      fprintf(fptr, "%d ", ii->identicon[j][i]);
-    }
-    for (int x = 4; x > 0; x--) {
-      int v = x * 3;
-      fprintf(fptr, "%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2],
-    ii->identicon[j][v-1]);
-    }
-  }
-  fprintf(fptr, "\n");
+  fprintf(fptr, "%s", buffer);
+  fclose(fptr);
   return 0;
 }
