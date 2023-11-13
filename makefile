@@ -4,7 +4,7 @@ LINKLIBS := /usr/local/lib/libcargs.a -lcrypto
 
 all: avatarme
 
-avatarme: avatarme.c $(LINKLIBS)
+avatarme: avatarme.c identicon.c $(LINKLIBS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 .PHONY: clean
