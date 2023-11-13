@@ -6,7 +6,7 @@ Generates a 8x8 two color bitmap from entered string using md5 hash function.
 
 ```
 Syntax: avatarme [OPTION] STRING
-Outputs identicon made from STRING into default file
+Outputs identicon made from STRING
   -h, --help  Shows commands' help
-  -o, --out   Specifies output file, defaults to iden.bmp
+  -o, --out   Specifies output file, otherwise prints to stdout
 
