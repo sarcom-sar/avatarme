@@ -32,8 +32,10 @@ struct identicon_info {
 
 uint8_t get_md5_digest(uint8_t* input, uint8_t* digest);
 void identicon_info_init_colors(struct identicon_info* ii, uint8_t mdv[]);
-int identicon_info_build_picture(struct identicon_info* ii, uint8_t mdv[]);
+void identicon_info_build_picture(struct identicon_info* ii, uint8_t mdv[]);
 
 void identicon_info_print_stuff(struct identicon_info* ii);
+
+int identicon_info_write_to_file(struct identicon_info* ii, const char* filename);
 
 #endif

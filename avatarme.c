@@ -44,7 +44,12 @@ int main(int argc, char *argv[]) {
 
   identicon_info_build_picture(&iden_i, md_value);
 
-  identicon_info_print_stuff(&iden_i);
+  //identicon_info_print_stuff(&iden_i);
+
+  if (identicon_info_write_to_file(&iden_i, conf.out) < 0) {
+      printf("failed to write to specified file\n");
+      return -1;
+  }
 
   return 0;
 }
@@ -88,7 +93,7 @@ void identicon_info_init_colors(struct identicon_info* ii, uint8_t mdv[]) {
   }
 }
 
-int identicon_info_build_picture(struct identicon_info* ii, uint8_t mdv[]) {
+void identicon_info_build_picture(struct identicon_info* ii, uint8_t mdv[]) {
   // first 4 pixels in 1st quadrant
   int x = 0;
   for (int j = 0; j < 4; j++) {
@@ -132,4 +137,36 @@ void identicon_info_print_stuff(struct identicon_info* ii) {
     }
   }
   printf("\n");
+}
+
+int identicon_info_write_to_file(struct identicon_info *ii, const char *filename) {
+  FILE *fptr;
+  fptr = fopen(filename, "w");
+  if (fptr == NULL) return -1;
+
+  fprintf(fptr, "%s", ii->magic_number);
+  fprintf(fptr, "%s", ii->size);
+  fprintf(fptr, "%s", ii->available_colors);
+  for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 12; i++) {
+      fprintf(fptr, "%d ", ii->identicon[j][i]);
+    }
+    for (int x = 4; x > 0; x--) {
+      int v = x * 3;
+      fprintf(fptr, "%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2], ii->identicon[j][v-1]);
+    }
+  }
+
+  for (int j = 3; j >= 0; j--) {
+    for (int i = 0; i < 12; i++) {
+      fprintf(fptr, "%d ", ii->identicon[j][i]);
+    }
+    for (int x = 4; x > 0; x--) {
+      int v = x * 3;
+      fprintf(fptr, "%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2],
+    ii->identicon[j][v-1]);
+    }
+  }
+  fprintf(fptr, "\n");
+  return 0;
 }
