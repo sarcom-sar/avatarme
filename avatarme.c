@@ -6,9 +6,10 @@ int main(int argc, char *argv[]) {
   char identifier;
   const char *value;
   cag_option_context context;
-  struct config conf = {"iden.bmp"};
+  struct config conf = {"iden.ppm"};
   uint8_t param_index;
   uint8_t md_value[EVP_MAX_MD_SIZE];
+  struct identicon_info iden_i;
 
   cag_option_prepare(&context, options, CAG_ARRAY_SIZE(options), argc, argv);
   while (cag_option_fetch(&context)) {
@@ -38,10 +39,13 @@ int main(int argc, char *argv[]) {
   if (get_md5_digest((uint8_t *)argv[param_index], md_value)) {
     return -1;
   }
-  for (int i = 0; i < 16; i++) {
-    printf("%02x", md_value[i]);
-  }
-  printf("\n");
+
+  identicon_info_init_colors(&iden_i, md_value);
+
+  identicon_info_build_picture(&iden_i, md_value);
+
+  identicon_info_print_stuff(&iden_i);
+
   return 0;
 }
 
@@ -57,7 +61,7 @@ uint8_t get_md5_digest(uint8_t *input, uint8_t *digest) {
     printf("Message init failed\n");
     goto failure;
   }
-  if (!EVP_DigestUpdate(mdctx, input, strlen((const char*)input))) {
+  if (!EVP_DigestUpdate(mdctx, input, strlen((const char *)input))) {
     printf("Message digest update failed\n");
     goto failure;
   }
@@ -69,7 +73,63 @@ uint8_t get_md5_digest(uint8_t *input, uint8_t *digest) {
 
   return 0;
 
- failure:
+failure:
   EVP_MD_CTX_free(mdctx);
   return -1;
- }
+}
+
+void identicon_info_init_colors(struct identicon_info* ii, uint8_t mdv[]) {
+  strcpy(ii->magic_number, "P3\n");
+  strcpy(ii->size, "8 8\n");
+  strcpy(ii->available_colors, "255\n");
+  for (int i = 0; i < 3; i++) {
+    ii->bg[i] = mdv[i];
+    ii->fg[i] = mdv[i+3];
+  }
+}
+
+int identicon_info_build_picture(struct identicon_info* ii, uint8_t mdv[]) {
+  // first 4 pixels in 1st quadrant
+  int x = 0;
+  for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 12; i += 3) {
+      if (mdv[x] % 4 == 0) {
+        ii->identicon[j][i] = ii->fg[0];
+        ii->identicon[j][i + 1] = ii->fg[1];
+        ii->identicon[j][i + 2] = ii->fg[2];
+      } else {
+        ii->identicon[j][i] = ii->bg[0];
+        ii->identicon[j][i + 1] = ii->bg[1];
+        ii->identicon[j][i + 2] = ii->bg[2];
+      }
+      x++;
+    }
+  }
+}
+
+void identicon_info_print_stuff(struct identicon_info* ii) {
+  printf("%s", ii->magic_number);
+  printf("%s", ii->size);
+  printf("%s", ii->available_colors);
+  for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 12; i++) {
+      printf("%d ", ii->identicon[j][i]);
+    }
+    for (int x = 4; x > 0; x--) {
+      int v = x * 3;
+      printf("%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2], ii->identicon[j][v-1]);
+    }
+  }
+
+  for (int j = 3; j >= 0; j--) {
+    for (int i = 0; i < 12; i++) {
+      printf("%d ", ii->identicon[j][i]);
+    }
+    for (int x = 4; x > 0; x--) {
+      int v = x * 3;
+      printf("%d %d %d ", ii->identicon[j][v-3], ii->identicon[j][v-2],
+    ii->identicon[j][v-1]);
+    }
+  }
+  printf("\n");
+}
