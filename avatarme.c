@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     switch (identifier) {
     case 'h':
       printf("Syntax: avatarme [OPTION] STRING\n");
-      printf("Outputs identicon made from STRING into default file\n");
+      printf("Outputs identicon made from STRING\n");
       cag_option_print(options, CAG_ARRAY_SIZE(options), stdout);
       return 0;
     case 'o':
